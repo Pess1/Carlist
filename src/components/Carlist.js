@@ -3,11 +3,14 @@ import ReactTable from 'react-table-v6';
 import 'react-table-v6/react-table.css';
 import Button from '@material-ui/core/Button';
 import Snackbar from '@material-ui/core/Snackbar';
+import Addcar from './Addcar';
+import Editcar from './Editcar';
 
 export default function Carlist() {
 
     const [cars , setCars] = useState([]);
     const [open, setOpen] = useState(false);
+    const [msg, setMsg] = useState("");
 
     useEffect(() => {
         getCars();
@@ -26,10 +29,43 @@ export default function Carlist() {
                 method: "DELETE"
             })
             .then(response => getCars())
-            .then(_ => setOpen(true))
+            .then(_ => {
+                setMsg("Car deleted");
+                setOpen(true)
+            })
             .catch(err => console.error(err))
         }
         
+    }
+
+    const addCar = car => {
+        fetch('https://carstockrest.herokuapp.com/cars',
+        {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(car)
+        })
+        .then(response => getCars())
+        .then(_ => {
+            setMsg("New Car Added!");
+            setOpen(true)
+        })
+        .catch(err => console.error(err))
+    }
+
+    const editCar = (link, car) => {
+        fetch(link,
+        {
+            method: 'PUT',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(car)
+        })
+        .then(response => getCars())
+        .then(_ => {
+            setMsg("Car Updated!");
+            setOpen(true)
+        })
+        .catch(err => console.error(err))
     }
 
     const handleClose = () => {
@@ -62,6 +98,9 @@ export default function Carlist() {
             accessor: "price"
         },
         {
+            Cell: row => (<Editcar updateCar={editCar} car={row.original}/>)
+        },
+        {
             accessor: "_links.self.href",
             Cell: row => (
                 <Button color="secondary" size="small" onClick={() => deleteCar(row.value)}>Delete</Button>
@@ -72,12 +111,13 @@ export default function Carlist() {
     
     return (
         <div>
+            <Addcar addCar={addCar}/>
             <ReactTable filterable={true} defaultPageSize={10} data={cars} columns={columns}/>
             <Snackbar 
                 open={open} 
                 autoHideDuration={4000} 
                 onClose={handleClose} 
-                message="Car deleted"
+                message={msg}
                 anchorOrigin={{
                     vertical: 'bottom',
                     horizontal: 'left',
